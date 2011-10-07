@@ -22,7 +22,7 @@ The governing differential equation which is solved numerically using the finite
  \section Installation
  To compile the library the makefile in the main directory should be executed. The user should change the path to this library in the makefile, this is indicated in the makefile comments. The paths PETsc and MPI should not require any changes if the library is being run on the MPDC cluster.
 
-In the examples folder a main.cpp exists that demonstrates how to use this library to solve for the temperatures of a layered snowpack. This code is compiled using the makefile in the examples directory.  Again, the path to this library should be editted. 
+In the examples folder contains an example that demonstrates how to use this library to solve for the temperatures of a layered snowpack. This code is compiled using the makefile in the examples directory. Again, the path to this library should be editted.  Details explaining the example are given here: \ref example1. 
  
  \section tools Additional Tools
  Included in the main directory of the library is a MATLAB file, plotT.m, that reads and plots the outputed data files from the finite difference library.
@@ -33,7 +33,7 @@ In the examples folder a main.cpp exists that demonstrates how to use this libra
 Slaughter, A.E. <A href="http://proquest.umi.com/pqdlink?Ver=1&Exp=10-01-2016&FMT=7&DID=2048139271&RQT=309&attempt=1&cfc=1">"Numerical analysis of conditions necessary for near-surface snow metamorphism."</A>
 Ph.D. Dissertation, Montana State University, 2010, 604 pages.
  */
-
+ 
 /*! \file heat_fdiff.h
 \brief Header file for heat_fdiff.cpp with code for solving the 1-D heat equatin in parallel.
 

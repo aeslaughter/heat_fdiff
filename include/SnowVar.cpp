@@ -3,7 +3,7 @@
  */
  
 #include "SnowVar.h" 			// Associated header file
-//@todo Make these one class with subclasses; add member functions to allow variables to change with time
+//! \todo Make these one class with subclasses; add member functions to allow variables to change with time
 // Initilize the default values for the snow, environmental, and numerical constants.
 SnowConstants::SnowConstants(){		
 	Ls = 2833; 		

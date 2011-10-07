@@ -35,12 +35,12 @@ LIB = $(FDPATH)/lib
 
 VPATH = $(FDINCPATH) $(OBJ) $(LIB)	
 
-main: main.o
-	$(CC) -O -o $@ main.o $(OBJ)/*.o $(LIBPATH)	
+example1: example1.o
+	$(CC) -O -o $@ example1.o $(OBJ)/*.o $(LIBPATH)	
 	
-main.o: main.cpp libheatfdiff.so
-	$(CC) -c $(CFLAGS) $(INCPATH) $(INCFLAG) -I$(OBJ) main.cpp	
+example1.o: example1.cpp libheatfdiff.so
+	$(CC) -c $(CFLAGS) $(INCPATH) $(INCFLAG) -I$(OBJ) example1.cpp		
 	
 clean:
-	rm -f main main.o
+	rm -f example1 example1.o example2 example2.o
 	
