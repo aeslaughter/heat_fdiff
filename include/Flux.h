@@ -1,29 +1,12 @@
 /*! \class Flux
 	\brief A class for gathering and computing the various flux terms for associated with the snowpack.
 	
-The purpose of the Flux class is to provided the necessary tools to (1) compute the surface flux for application of the Nuemann boundary condition (constant flux) and (2) to compute the absorbed short-wave radiation flux for a given layer of the snowpack. This calculations are performed in the member functions qsurface and qabsorbed, respectively. All other member functions are used by these two functions,
-	
+The purpose of the Flux class is to provided the necessary tools to (1) compute the surface flux for application of the Nuemann boundary condition (constant flux) and (2) to compute the absorbed short-wave radiation flux for a given layer of the snowpack. This calculations are performed in the member functions qsurface and qabsorbed, respectively. All other member functions are used by these two functions.
 */
 
 class Flux{
 	public:
 	double pa;  //!< Air density (kg/m^3); see qsurface
-	
-	/*! Flux class constructor, which makes the defined constants available upon creation of the class object for initilization.
-	
-	<B>SYNTAX:</B><ul> 
-		<li>F = Flux(D,E,C)</ul>
-	
-	<B>INPUT:</B><ul>
-		<li> D = FiniteDiffParam object
-		<li> E = EnvirConditions
-		<li> C = SnowConstants object
-		</ul>
-		
-	<B>OUTPUT:</B><ul>
-		<li> F = an instance of the Flux class.</ul>
-	*/	
-	//Flux::Flux(FiniteDiffParam, EnvirConditions, SnowConstants);
 	
 	/*! A  class member that uses the Clausius-Clayperon equation for computing the water-vapor pressure over a surface.
 	
@@ -98,7 +81,6 @@ class Flux{
 		<li> qlw = Longwave heat flux (W/m^2)</ul>
 	*/
 	double longwave(EnvirConditions, SnowConstants, double);
-
 	
 	/*! A class member for building the absorbed short-wave flux vector.
 		
@@ -116,8 +98,8 @@ class Flux{
 		
 	<B>OUTPUT:</B><ul>
 		<li> qa = The absorbed flux for layer i (W/m^3)</ul>
-
-		*/	
+	*/	
+		
 	double qabsorbed(FiniteDiffParam, EnvirConditions, SnowConstants, int);
 		
 	/*! A class member for building the surface flux vector.
