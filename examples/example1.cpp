@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 	EnvirConditions E;	// class containing variables related to enviornmental conditions
 	SnowConstants C;	// class containing variables related to snow material properties
 	Flux F;				// class with member functions for computing heat flux terms
-	
+
 // Define the variables to be used
 	int i, t;			// indices used for loops
 	int low, high; 		// indices storing the range of global indices for a local vector
@@ -137,8 +137,8 @@ int main(int argc, char *argv[])
 // Initializes PETsc, including MPI
 	PetscInitialize(&argc,&argv,(char *)0,help);	
 
-// Create the necessary PETscvectors
-	createWithGhosts(&T,N);	// creates temperature vector (see finite_diff_tools.h)
+// Create the necessary PETsc vectors
+	createWithGhosts(&T,N);	// creates temperature vector (see heat_fdiff.h)	
 	VecCreateMPI(PETSC_COMM_WORLD,PETSC_DETERMINE,N,&bvec);	// creates b vector of knowns
 	VecCreateMPI(PETSC_COMM_WORLD,PETSC_DETERMINE,N,&qabs); // creates vector of absorbed flux
 	
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 		
 // Set the initial temperature for all of the layers to a constant value	
 	VecSet(T,E.Tstart);	// PETsc function for vector initialization
-	assembleVec(&T);	// function for assembling the ghosted vector (see finite_diff_tools.h)
+	assembleVec(&T);	// function for assembling the ghosted vector (see heat_fdiff.h)
 //! [build]	
 	
 //! [out1]	
@@ -191,7 +191,6 @@ int main(int argc, char *argv[])
 		
 	// Adds the abaorbed heat flux to the b vector
 		bvec_applyflux(&bvec,&qabs);
-		
 	// Creates the stiffness matrix
 		Kmat_update(&K,c[0],c[2]);
 	
@@ -206,12 +205,12 @@ int main(int argc, char *argv[])
 				val = 0;
 				VecSetValues(T, 1, &i, &val, INSERT_VALUES);	// Insert the value into the vector
 			}
-		}	
-		
+		}		
+	
 	// Writes the new temperature vector to the file
 		output_temp(&T, 1, filename, D.n, D.dz, D.nt, D.dt);	
 //! [solve]
-		
+
 //! [finish]		
 	}; // Complete the time loop
 	
@@ -222,5 +221,6 @@ int main(int argc, char *argv[])
 	time(&endtime);
 	printf("Execution time: %f.\n", difftime(endtime,starttime));    
 	return(0);
+	
 }
 //! [finish]

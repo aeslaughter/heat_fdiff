@@ -9,7 +9,7 @@ Note: In general, these functions are passed pointers to the various vectors and
 #include <math.h> 
 
 // Add the PETsc related files
-#include "petscvec.h"	// PETsc vectors
+#include "petscvec.h"		// PETsc vectors
 #include "petscmat.h" 	// PETsc matrices
 #include "petscksp.h" 	// PETsc KSP solver
 
@@ -35,16 +35,20 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 	int row = 0;			// index for inserting into PETsc vectors
 	double T123[3];			// storage vector for temperatures {T(z-1), T(z), T(z+1)}
 	double val;				// storage value for inserting into PETsc vectors
-	double *Tloc;			// Pointer 
+	double *Tloc;			// pointer for storing local values of T vector
+	Vec TlocVec;			// storage location for local vector
 	
 	// Define the current process and the total number of processes		
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
 
 	// Extract the local values of the T vector into the Tloc array
-	VecGetLocalSize(*T,&nlocal);			// Size of local vector
-	VecGetOwnershipRange(*T, &low, &high);	// Global limits of the local vector
-	VecGetArray(*T,&Tloc);					// Extracts the local vector
+	VecGetLocalSize(*T,&nlocal);				// Size of local vector
+	VecGetOwnershipRange(*T, &low, &high);		// Global limits of the local vector
+
+	// Extract the local vector and store the values in Tloc
+	VecGhostGetLocalForm(*T,&TlocVec);			// Extracts the local values with ghosts to TlocVec
+	VecGetArray(TlocVec,&Tloc);					// Extracts the local vector into an array, Tloc
 
 	// Loop through each value of the local vector and compute the b vector component
 	for (i=0; i<nlocal; i++) {
@@ -85,9 +89,11 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 		// Insert the compute b vector value (all cases above)
 		VecSetValues(*bvec,1,&row,&val,INSERT_VALUES);
 	}
-	
+
 	// Return the local array to the global temperature vector
-	VecRestoreArray(*T,&Tloc);
+	VecRestoreArray(TlocVec,&Tloc);			// completes use of local array Tloc
+	VecGhostRestoreLocalForm(*T,&TlocVec);	// completes the useage of loval vector TlocVec
+	VecDestroy(&TlocVec);					// destroys the TlocVec
 	
 	// Assemble the b vector
 	VecAssemblyBegin(*bvec);
@@ -190,7 +196,7 @@ int solve_temp(Vec *T, Vec *bvec, Mat *A)
 	VecCopy(Tnew,*T);
 	
 	// Destroy Tnew vector and zero out b vector and stiffness matrix
-	VecDestroy(Tnew);
+	VecDestroy(&Tnew);			// Use "VecDestroy(Tnew);" in PETSc 2.3.3
 	VecZeroEntries(*bvec);
 	MatZeroEntries(*A);
 	return(0);
@@ -199,28 +205,31 @@ int solve_temp(Vec *T, Vec *bvec, Mat *A)
 // Create a temperature vector with ghosted values
 int createWithGhosts(Vec *x, int N)
 {
+	
 	// Define variables
-	int nlocal; 	// local size of vector
-	int gidx[2]; 	// global indices for ghosts
-	int r; 			// current process number
-	int np; 		// total number of processes 
+	int nlocal; 		// local size of vector
+	int gidx[2]; 		// global indices for ghosts
+	int r; 				// current process number
+	int np; 				// total number of processes 
 		
 	// Determine process and total number of processors
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);	
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
-
-	// Return and error if the number of processes exceeds the length of vector
-	if(np > N){
-		SETERRQ(1,"The number of processors must not exceed the vectors size!");
-	}
-
+	
 	// Calculate the desired number of local values per processes
 	nlocal = ceil(double(N)/double(np));
 
 	// Define the global indices for the ghosts
 	// Case for first process
 	if(r == 0){ 
-		gidx[0] = 0; gidx[1] = nlocal;
+		gidx[0] = 0; 
+	
+		if(np==1){
+			gidx[1] = nlocal - 1;	// Single processor case
+		}
+		else{
+			gidx[1] = nlocal;		// Multiprocessor case
+		}
 	} 
 	
 	// Case for the last process
@@ -233,11 +242,11 @@ int createWithGhosts(Vec *x, int N)
 	// Case for the middle processes
 	else{
 		gidx[0] = (r * nlocal) - 1;	
-		gidx[1] = ((r + 1) * nlocal);	
+		gidx[1] = ((r + 1) * nlocal) ;	
 	}	
 	
 	// Create the ghosted vector
-	VecCreateGhost(PETSC_COMM_WORLD,nlocal,PETSC_DECIDE,2,gidx,x);
+	VecCreateGhost(PETSC_COMM_WORLD,nlocal,PETSC_DECIDE,2,gidx,x); 
 	return(0);
 };
 
@@ -251,7 +260,6 @@ int assembleVec(Vec *x)
 	// Updates the ghost values
 	VecGhostUpdateBegin(*x,INSERT_VALUES,SCATTER_FORWARD);
 	VecGhostUpdateEnd(*x,INSERT_VALUES,SCATTER_FORWARD);
-	
 	return(0);
 }
 

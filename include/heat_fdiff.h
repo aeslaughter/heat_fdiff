@@ -1,6 +1,8 @@
-/*! \mainpage Parallel 1-D Finite Difference Solution Library with Application for Layered Snowpacks
- * \section intro_sec Introduction
- * The programs included here are some basic functions for solving the heat equation in 1-D using the finite difference method.  Additionall, included are functions for applying the method to model a layered snowpack, as presented by  <A href="http://proquest.umi.com/pqdlink?Ver=1&Exp=10-01-2016&FMT=7&DID=2048139271&RQT=309&attempt=1&cfc=1"> Slaughter (2010)</A>. The code presented here offers a simplified solution, that is the input does not vary with time. However, this code could easily be modified to make some or all variables dependant on time.
+/*! 
+\mainpage Parallel 1-D Finite Difference Solution Library with Application for Layered Snowpacks.
+
+\section intro_sec Introduction
+ The programs included here are some basic functions for solving the heat equation in 1-D using the finite difference method.  Additionall, included are functions for applying the method to model a layered snowpack, as presented by  <A href="http://proquest.umi.com/pqdlink?Ver=1&Exp=10-01-2016&FMT=7&DID=2048139271&RQT=309&attempt=1&cfc=1"> Slaughter (2010)</A>. The code presented here offers a simplified solution, that is the input does not vary with time. However, this code could easily be modified to make some or all variables dependant on time.
  
  The main purpose for developing these programs was primarily to learn C++, parrallel programming, and documentation using 
  <A HREF="http://www.stack.nl/~dimitri/doxygen/index.html">Doxygen</A>. As such, the code is likely far more complicated and commented than need be for such a simple problem.  Additionally, the author hopes that these codes will be useful for others learning C++ and parallel programming at the same time.
@@ -75,7 +77,8 @@ int get_coeff(double *, double, double, double, double, double);
 int bvec_update(Vec *, Vec *, double, double, double, double);
 
 
-/*! \fn bvec_applyflux(Vec *, Vec *);
+/*! 
+\fn bvec_applyflux(Vec *, Vec *);
 \brief Adds absorbed flux vector to the b vector of knowns.
 
 <B>SYNTAX:</B><ul> 
