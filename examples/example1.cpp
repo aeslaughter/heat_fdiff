@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 		
 // Set the initial temperature for all of the layers to a constant value	
 	VecSet(T,E.Tstart);	// PETsc function for vector initialization
-	assembleVec(&T);	// function for assembling the ghosted vector (see heat_fdiff.h)
+	assembleGhostVec(&T);	// function for assembling the ghosted vector (see heat_fdiff.h)
 //! [build]	
 	
 //! [out1]	
@@ -157,6 +157,7 @@ int main(int argc, char *argv[])
 //! [out1]	
 	
 //! [loop]	
+D.nt = 0;
 // Begin computation of new temperatures by stepping through time
 	for(t=0; t <= D.nt; t++)
 	{
@@ -165,10 +166,10 @@ int main(int argc, char *argv[])
 //! [snow]	
 	// Construct the absorbed heat flux vector
 		/* Note, both the absorbed (qabs) and surface (qs) variables are in units of W/m^3. The true heat flux values are divided by the layer thickness in the Flux member functions. Thus, although incorrect, the term heat flux is used here for convience.*/
-		VecGetOwnershipRange(qabs, &low, &high);	// global limits of the local vector
-		for(i = low; i < high; ++i) {				// loop over the gather limits
-			val = F.qabsorbed(D,E,C,i);				// compute the absorbed flux at this layer
-			VecSetValues(qabs, 1, &i, &val, INSERT_VALUES);	// Insert the value into the vector
+		VecGetOwnershipRange(qabs, &low, &high);			// global limits of the local vector
+		for(i = low; i < high; ++i) {						// loop over the gather limits
+			val = F.qabsorbed(D,E,C,i);						// compute the absorbed flux at this layer
+			VecSetValues(qabs, 1, &i, &val, INSERT_VALUES);	// insert the value into the vector
 		}
 		
 	// Assemble the absrobed heat flux vector
@@ -187,10 +188,11 @@ int main(int argc, char *argv[])
 		get_coeff(c, C.p, C.k, C.cp, D.dz, D.dt); 
 
 	// Updates b vector with the coefficients, surface flux, and fixed boundary temperature
-		bvec_update(&bvec,&T, c[0], c[3], qs, E.Tstart);
+		bvec_update(&bvec,&T, c[0], c[3], qs, E.Tbot);
 		
 	// Adds the abaorbed heat flux to the b vector
 		bvec_applyflux(&bvec,&qabs);
+	
 	// Creates the stiffness matrix
 		Kmat_update(&K,c[0],c[2]);
 	
@@ -199,13 +201,14 @@ int main(int argc, char *argv[])
 		
 	// Do not allow the snow to melt
 		VecGetOwnershipRange(T, &low, &high);	// global limits of the local vector
-		for(i = low; i < high; ++i) {				// loop over the gather limits
-			VecGetValues(T,1,&row,&val); // Extracts the surface temperature, Ts
+		for(i = low; i < high; ++i) {			// loop over the gather limits
+			VecGetValues(T,1,&row,&val); 		// extracts the surface temperature, Ts
 			if(val > 0){
 				val = 0;
-				VecSetValues(T, 1, &i, &val, INSERT_VALUES);	// Insert the value into the vector
+				VecSetValues(T, 1, &i, &val, INSERT_VALUES);	// insert the value into the vector
 			}
-		}		
+		}	
+		assembleGhostVec(&T); // assemble T vector
 	
 	// Writes the new temperature vector to the file
 		output_temp(&T, 1, filename, D.n, D.dz, D.nt, D.dt);	
@@ -221,6 +224,5 @@ int main(int argc, char *argv[])
 	time(&endtime);
 	printf("Execution time: %f.\n", difftime(endtime,starttime));    
 	return(0);
-	
 }
 //! [finish]

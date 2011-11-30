@@ -1,6 +1,6 @@
 # Define the compiler and compiler options
 CC = g++
-CFLAGS	= -w -O2 -g
+CFLAGS	= -g
 
 # Define the paths for using PETsc and MPI 
 include ${PETSC_DIR}/conf/variables
@@ -28,13 +28,13 @@ LIB = $(FDPATH)/lib
 VPATH = $(FDINCPATH) $(OBJ) $(LIB)
 
 example1: example1.o
-	$(CC) -O -o $@ example1.o $(OBJ)/*.o $(LIBPATH)	
+	$(CC) -o $@ example1.o $(OBJ)/*.o $(LIBPATH)	
 	
 example1.o: example1.cpp libheatfdiff.so
 	$(CC) -c $(CFLAGS) $(INCPATH) $(INCFLAG) -I$(OBJ) example1.cpp	
 	
 heat_fdiff_test: heat_fdiff_test.o
-	$(CC) -O -o $@ heat_fdiff_test.o $(OBJ)/*.o $(LIBPATH)	
+	$(CC) -o $@ heat_fdiff_test.o $(OBJ)/*.o $(LIBPATH)	
 	
 heat_fdiff_test.o: heat_fdiff_test.cpp libheatfdiff.so
 	$(CC) -c $(CFLAGS) $(INCPATH) $(INCFLAG) -I$(OBJ) heat_fdiff_test.cpp		

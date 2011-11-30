@@ -41,7 +41,10 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 	// Define the current process and the total number of processes		
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
-
+	
+	//VecGhostUpdateBegin(*T,INSERT_VALUES,SCATTER_FORWARD);
+	//VecGhostUpdateEnd(*T,INSERT_VALUES,SCATTER_FORWARD);
+	
 	// Extract the local values of the T vector into the Tloc array
 	VecGetLocalSize(*T,&nlocal);				// Size of local vector
 	VecGetOwnershipRange(*T, &low, &high);		// Global limits of the local vector
@@ -94,6 +97,9 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 	VecRestoreArray(TlocVec,&Tloc);			// completes use of local array Tloc
 	VecGhostRestoreLocalForm(*T,&TlocVec);	// completes the useage of loval vector TlocVec
 	VecDestroy(&TlocVec);					// destroys the TlocVec
+	
+	VecGhostUpdateBegin(*T,INSERT_VALUES,SCATTER_FORWARD);
+	VecGhostUpdateEnd(*T,INSERT_VALUES,SCATTER_FORWARD);
 	
 	// Assemble the b vector
 	VecAssemblyBegin(*bvec);
@@ -194,6 +200,8 @@ int solve_temp(Vec *T, Vec *bvec, Mat *A)
 	
 	// Assign Tnew = T for the next time step
 	VecCopy(Tnew,*T);
+	//assembleGhostVec(*T);
+	
 	
 	// Destroy Tnew vector and zero out b vector and stiffness matrix
 	VecDestroy(&Tnew);			// Use "VecDestroy(Tnew);" in PETSc 2.3.3
@@ -251,8 +259,11 @@ int createWithGhosts(Vec *x, int N)
 };
 
 // Assembles the ghosted vector
-int assembleVec(Vec *x)
+int assembleGhostVec(Vec *x)
 {
+	VecView(*x,	PETSC_VIEWER_STDOUT_WORLD);
+	VecGhostView(*x);
+
 	// Assembles the vector
 	VecAssemblyBegin(*x);
 	VecAssemblyEnd(*x);
@@ -260,7 +271,6 @@ int assembleVec(Vec *x)
 	// Updates the ghost values
 	VecGhostUpdateBegin(*x,INSERT_VALUES,SCATTER_FORWARD);
 	VecGhostUpdateEnd(*x,INSERT_VALUES,SCATTER_FORWARD);
-	return(0);
 }
 
 // Appends the temperature vector to a file
@@ -297,3 +307,25 @@ int output_temp(Vec *T, int init, char *filename, int n, double dz, int nt, doub
 	}
 	return(0);
 }
+
+// Displays a vector, with ghosts, as created by createWithGhosts
+int VecGhostView(Vec v){
+
+	// Define the necessary variables
+	int i, low, high, r, n;		// indices, rank, and local size of the vector
+	Vec vlocVec;				// storage location local vector
+	double *vloc;				// pointer for storing local values of v vector
+	
+	// Gather limits of vector
+	MPI_Comm_rank(MPI_COMM_WORLD, &r);
+	VecGetLocalSize(v,&n);						// Size of local vector
+	VecGetOwnershipRange(v, &low, &high);		// Global limits of the local vector
+	
+	// Print the vector
+	printf("Process [%d]\n",r);
+	for (i=0; i<n+2; i++){	
+		PetscSynchronizedPrintf(PETSC_COMM_WORLD," %f\n", vloc[i]);
+	}
+	return(0);
+}
+

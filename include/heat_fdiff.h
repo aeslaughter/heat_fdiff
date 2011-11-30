@@ -29,7 +29,7 @@ In the examples folder contains an example that demonstrates how to use this lib
  \section tools Additional Tools
  Included in the main directory of the library is a MATLAB file, plotT.m, that reads and plots the outputed data files from the finite difference library.
  
- The documentation was created with the Doxygen Wizard GUI. The settings file associated is included in the main directory:  doc_settings.
+ The documentation was created with the Doxygen Wizard GUI. The settings file associated is included in the main directory:  doxygensetting.
  
  \section References
 Slaughter, A.E. <A href="http://proquest.umi.com/pqdlink?Ver=1&Exp=10-01-2016&FMT=7&DID=2048139271&RQT=309&attempt=1&cfc=1">"Numerical analysis of conditions necessary for near-surface snow metamorphism."</A>
@@ -142,7 +142,7 @@ The vertical line is used to distiguish between the local vector and the ghost v
 int createWithGhosts(Vec *, int);
 
 
-/*! \fn assembleVec(Vec *);
+/*! \fn assembleGhostVec(Vec *);
 \brief Assembles a ghosted PETsc vector created with the function createWithGhosts
 
 <B>SYNTAX:</B><ul> 
@@ -151,7 +151,7 @@ int createWithGhosts(Vec *, int);
 <B>INPUT:</B><ul>
 	<li> &T = Pointer to a PETsc vector object</ul>	
 */
-int assembleVec(Vec *);
+int assembleGhostVec(Vec *);
 
 
 /*! \fn output_temp(Vec *, int, char *, int, double,int, double);
@@ -169,3 +169,14 @@ int assembleVec(Vec *);
 	<li> nt = Number of times steps</ul>	
 */
 int output_temp(Vec *, int, char *, int, double, int, double);
+
+/*! \fn VecGhostView(Vec);
+\brief Displays a PETSc vector created with function createWithGhosts
+
+\b SYNTAX:
+	- VecGhostView(v);
+	
+\b INPUT:
+	- v = a PETSc vector object that was created with createWithGhosts
+*/	
+int VecGhostView(Vec);
