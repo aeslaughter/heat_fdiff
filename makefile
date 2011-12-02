@@ -1,6 +1,6 @@
 # Define the compiler and compiler options
 CC = g++
-CFLAGS	= -w -O2 -g
+CFLAGS	= -g
 
 # Define the paths for using PETsc and MPI 
 include ${PETSC_DIR}/conf/variables

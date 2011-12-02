@@ -2,3 +2,9 @@
 readme.html
 /lib
 /object
+*.stackdump
+*.dat
+*.db
+*.o
+*.exe
+Readme.html.lnk

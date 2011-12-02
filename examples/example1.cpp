@@ -102,16 +102,9 @@ int main(int argc, char *argv[])
 	time(&starttime);
 
 // Define the output filename. 
-	/* The default is output.dat, but this may be changed via the command line. The first command line input, if it exists, is assumed to be the desired filename. For example:
-	[user]$ ./main results.txt.
-	*/
 	char *filename;				// Pointer to a character array
-	if(argv[1] != NULL){ 		// Case without a command line input
-		filename = argv[1];
-	}
-	else{						// Case with a command line filename input
-		filename = "output.dat";
-	}
+	filename = "output.dat";
+
 //! [main]
 
 //! [var]		
@@ -138,7 +131,7 @@ int main(int argc, char *argv[])
 	PetscInitialize(&argc,&argv,(char *)0,help);	
 
 // Create the necessary PETsc vectors
-	createWithGhosts(&T,N);	// creates temperature vector (see heat_fdiff.h)	
+	createWithGhosts(T,N);	// creates temperature vector (see heat_fdiff.h)	
 	VecCreateMPI(PETSC_COMM_WORLD,PETSC_DETERMINE,N,&bvec);	// creates b vector of knowns
 	VecCreateMPI(PETSC_COMM_WORLD,PETSC_DETERMINE,N,&qabs); // creates vector of absorbed flux
 	
@@ -148,12 +141,12 @@ int main(int argc, char *argv[])
 		
 // Set the initial temperature for all of the layers to a constant value	
 	VecSet(T,E.Tstart);	// PETsc function for vector initialization
-	assembleGhostVec(&T);	// function for assembling the ghosted vector (see heat_fdiff.h)
+	assembleGhostVec(T);	// function for assembling the ghosted vector (see heat_fdiff.h)
 //! [build]	
 	
 //! [out1]	
 // Output the initial temperature to the desired file
-	output_temp(&T, 0, filename, D.n, D.dz, D.nt, D.dt);
+	output_temp(T, 0, filename, D.n, D.dz, D.nt, D.dt);
 //! [out1]	
 	
 //! [loop]	
@@ -188,16 +181,16 @@ D.nt = 0;
 		get_coeff(c, C.p, C.k, C.cp, D.dz, D.dt); 
 
 	// Updates b vector with the coefficients, surface flux, and fixed boundary temperature
-		bvec_update(&bvec,&T, c[0], c[3], qs, E.Tbot);
+		bvec_update(bvec, T, c[0], c[3], qs, E.Tbot);
 		
 	// Adds the abaorbed heat flux to the b vector
-		bvec_applyflux(&bvec,&qabs);
+		bvec_applyflux(bvec,qabs);
 	
 	// Creates the stiffness matrix
-		Kmat_update(&K,c[0],c[2]);
+		Kmat_update(K,c[0],c[2]);
 	
 	// Solves the Ax = b equation and returns the new temperature to T vector
-		solve_temp(&T, &bvec, &K);
+		solve_temp(T, bvec, K);
 		
 	// Do not allow the snow to melt
 		VecGetOwnershipRange(T, &low, &high);	// global limits of the local vector
@@ -208,10 +201,10 @@ D.nt = 0;
 				VecSetValues(T, 1, &i, &val, INSERT_VALUES);	// insert the value into the vector
 			}
 		}	
-		assembleGhostVec(&T); // assemble T vector
+		assembleGhostVec(T); // assemble T vector
 	
 	// Writes the new temperature vector to the file
-		output_temp(&T, 1, filename, D.n, D.dz, D.nt, D.dt);	
+		output_temp(T, 1, filename, D.n, D.dz, D.nt, D.dt);	
 //! [solve]
 
 //! [finish]		
@@ -222,7 +215,7 @@ D.nt = 0;
 
 // Define the end time
 	time(&endtime);
-	printf("Execution time: %f.\n", difftime(endtime,starttime));    
+	printf("Execution time: %f.\n", difftime(endtime, starttime));    
 	return(0);
 }
 //! [finish]

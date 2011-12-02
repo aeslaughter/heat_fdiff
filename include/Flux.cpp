@@ -61,4 +61,5 @@ double Flux::qsurface(FiniteDiffParam F, EnvirConditions E, SnowConstants C, dou
 		qs = (longwave(E,C,Ts) + latent(E,C,Ts) + sensible(E,C,Ts))/F.dz; // Total surface heat flux
 		return(qs);
 	};
+	
 			

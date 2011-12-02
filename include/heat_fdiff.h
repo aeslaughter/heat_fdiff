@@ -65,67 +65,67 @@ int get_coeff(double *, double, double, double, double, double);
 \brief Computes the vector of knowns without the absorbed heat flux
 
 <B>SYNTAX:</B><ul> 
-	<li>bvec_update(&b,&T, c[0], c[3], qs, Tstart);</ul>
+	<li>bvec_update(b, T, c[0], c[3], qs, Tstart);</ul>
 
 <B>INPUT:</B><ul>
-	<li> &b = Pointer to a PETsc vector object that contains the knowns (see bvec_update)
+	<li> b = PETsc vector object that contains the knowns (see bvec_update)
 	<li> c[0] = The first, a in Slaughter (2010), coefficient (see get_coeff)
 	<li> c[3] = The fourth, d in Slaughter (2010), coefficient (see get_coeff)
 	<li> qs = The heat flux at the surface node
 	<li> Tstart = The initial staring temperature (assumed constant for the entire system)</ul>
 */
-int bvec_update(Vec *, Vec *, double, double, double, double);
+int bvec_update(Vec, Vec, double, double, double, double);
 
 
 /*! 
-\fn bvec_applyflux(Vec *, Vec *);
+\fn bvec_applyflux(Vec, Vec);
 \brief Adds absorbed flux vector to the b vector of knowns.
 
 <B>SYNTAX:</B><ul> 
 	<li>bvec_applyflux(&b, &q);</ul>
 
 <B>INPUT:</B><ul>
-	<li> &b = Pointer to a PETsc vector object that contains the knowns (see bvec_update)
-	<li> &q = Pointer to a PETsc vector object containing absorbed heat to be added</ul>
+	<li> b = PETsc vector object that contains the knowns (see bvec_update)
+	<li> q = PETsc vector object containing absorbed heat to be added</ul>
 */
-int bvec_applyflux(Vec *, Vec *);
+int bvec_applyflux(Vec, Vec);
 
 
-/*! \fn Kmat_update(Mat *,double, double);
+/*! \fn Kmat_update(Mat, double, double);
 \brief Builds or updates the stiffness matrix
 
 <B>SYNTAX:</B><ul> 
-	<li>Kmat_update(&A,a,b);</ul>
+	<li>Kmat_update(A,a,b);</ul>
 
 <B>INPUT:</B><ul>
-	<li> &A = Pointer to a PETsc matrix object containing the stiffness matrix (see Kmat_update)
+	<li> A = PETsc matrix object containing the stiffness matrix (see Kmat_update)
 	<li> a,b = Coefficients used in stiffness and b-matrix, see get_coeff and Slaughter (2010) for detals</ul>	
 */
-int Kmat_update(Mat *,double, double);
+int Kmat_update(Mat, double, double);
 
 
-/*! \fn solve_temp(Vec *, Vec *, Mat *);
+/*! \fn solve_temp(Vec, Vec, Mat);
 \brief Solves the linear equation, Ax = b, for x in parallel.
 
 <B>SYNTAX:</B><ul> 
 	<li>solve_temp(&T, &b, &A);</ul>
 
 <B>INPUT:</B><ul>
-	<li> &T = Pointer to a PETsc vector object that will store the computed temperatures
-	<li> &b = Pointer to a PETsc vector object that contains the knowns (see bvec_update)
-	<li> &A = Pointer to a PETsc matrix object containing the stiffness matrix (see Kmat_update)</ul>	
+	<li> T = PETsc vector object that will store the computed temperatures
+	<li> b = PETsc vector object that contains the knowns (see bvec_update)
+	<li> A = PETsc matrix object containing the stiffness matrix (see Kmat_update)</ul>	
 */
-int solve_temp(Vec *, Vec *, Mat *);
+int solve_temp(Vec, Vec, Mat);
 
 
-/*! \fn createWithGhosts(Vec *, int);
+/*! \fn createWithGhosts(Vec, int);
 \brief Creates a parallel vector with padding or ghosted values.
 
 <B>SYNTAX:</B><ul> 
-	<li>createWithGhosts(&T), where T is a PETsc vector object.</ul>
+	<li>createWithGhosts(T), where T is a PETsc vector object.</ul>
 
 <B>INPUT:</B><ul>
-	<li> &T = Pointer to a PETsc vector object</ul>
+	<li> T = PETsc vector object</ul>
 		
 <B>DESCRIPTION:</B>\n
 The finite difference solution for the transient 1-D heat requires that the temperature vector for the current time step be used to compute the future temperature vector. With the exception at the boundaries, this calculation states that the future temperature at time t + 1 at node i, T(i,t+1), is a function of the of the three other temperatures at the current time: T(i-1,t), T(i,t), and T(i+1,t). As such a parallel distributed vectors must have overlapping values for proper computation.
@@ -139,36 +139,36 @@ For example, if the vector [0,1,2,3,4,5,6,7,8] was parsed to three processors, t
 
 The vertical line is used to distiguish between the local vector and the ghost values for this vector, which are the values before and after the vector. At the boundaries the first and last entries are simply repeated, but not used in calculations. Note, the function bvec_update utilizes these padded vectors, this function only provides instructions for assembly and the function assembleVec actually performs the assembly.
 */
-int createWithGhosts(Vec *, int);
+int createWithGhosts(Vec, int);
 
 
-/*! \fn assembleGhostVec(Vec *);
+/*! \fn assembleGhostVec(Vec);
 \brief Assembles a ghosted PETsc vector created with the function createWithGhosts
 
 <B>SYNTAX:</B><ul> 
-	<li>assembleVec(&T), where T is a PETsc vector object.</ul>
+	<li>assembleVec(T), where T is a PETsc vector object.</ul>
 
 <B>INPUT:</B><ul>
-	<li> &T = Pointer to a PETsc vector object</ul>	
+	<li> T = PETsc vector object</ul>	
 */
-int assembleGhostVec(Vec *);
+int assembleGhostVec(Vec);
 
 
-/*! \fn output_temp(Vec *, int, char *, int, double,int, double);
+/*! \fn output_temp(Vec, int, char *, int, double,int, double);
 \brief Outputs a temperature vector to a file.
 
 <B>SYNTAX:</B><ul> 
-	<li>output_temp(&T, trig, filename, dz, n, dt, nt);</ul>
+	<li>output_temp(T, trig, filename, dz, n, dt, nt);</ul>
 
 <B>INPUT:</B><ul>
-	<li> &T = Pointer to a PETsc vector object
+	<li> T =  PETsc vector object
 	<li> trig = 0 or 1, if zero the header dz, n, dt, and nt are printed
 	<li> dz = The distance between nodes
 	<li> n = The number of nodes
 	<li> dt = Time step in seconds
 	<li> nt = Number of times steps</ul>	
 */
-int output_temp(Vec *, int, char *, int, double, int, double);
+int output_temp(Vec, int, char *, int, double, int, double);
 
 /*! \fn VecGhostView(Vec);
 \brief Displays a PETSc vector created with function createWithGhosts

@@ -27,7 +27,7 @@ int get_coeff(double *c, double rho, double k, double cp, double dz, double dt)
 }		
 
 // Computes in parallel the vector of knowns using the ghosted temperature vector
-int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom)
+int bvec_update(Vec bvec, Vec T, double a, double d, double qs, double Tbottom)
 {
 	int i, r, np;			// loop index, current process, total number of processes
 	int low, high; 			// indices storing the range of global indices for a local vector
@@ -38,6 +38,7 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 	double *Tloc;			// pointer for storing local values of T vector
 	Vec TlocVec;			// storage location for local vector
 	
+	VecGhostView(T);
 	// Define the current process and the total number of processes		
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
@@ -46,13 +47,23 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 	//VecGhostUpdateEnd(*T,INSERT_VALUES,SCATTER_FORWARD);
 	
 	// Extract the local values of the T vector into the Tloc array
-	VecGetLocalSize(*T,&nlocal);				// Size of local vector
-	VecGetOwnershipRange(*T, &low, &high);		// Global limits of the local vector
+	VecGetLocalSize(T,&nlocal);				// Size of local vector
+	VecGetOwnershipRange(T, &low, &high);		// Global limits of the local vector
+	
+	//double TlocArray[nlocal+2];
+	//Tloc = &TlocArray;
+	//PetscScalar *Tloc;
 
 	// Extract the local vector and store the values in Tloc
-	VecGhostGetLocalForm(*T,&TlocVec);			// Extracts the local values with ghosts to TlocVec
-	VecGetArray(TlocVec,&Tloc);					// Extracts the local vector into an array, Tloc
-
+	VecGhostGetLocalForm(T,&TlocVec);			// Extracts the local values with ghosts to TlocVec
+	
+	
+	//int idx[] = {0,1,2};
+	//VecGetValues(TlocVec, 3, idx, T123); 
+	
+	VecGetArray(TlocVec, &Tloc);					// Extracts the local vector into an array, Tloc
+	
+	
 	// Loop through each value of the local vector and compute the b vector component
 	for (i=0; i<nlocal; i++) {
 		row = low + i;	// Global index of the local component
@@ -90,38 +101,38 @@ int bvec_update(Vec *bvec, Vec *T, double a, double d, double qs, double Tbottom
 		}	
 		
 		// Insert the compute b vector value (all cases above)
-		VecSetValues(*bvec,1,&row,&val,INSERT_VALUES);
+		VecSetValues(bvec,1,&row,&val,INSERT_VALUES);
 	}
 
 	// Return the local array to the global temperature vector
 	VecRestoreArray(TlocVec,&Tloc);			// completes use of local array Tloc
-	VecGhostRestoreLocalForm(*T,&TlocVec);	// completes the useage of loval vector TlocVec
+	VecGhostRestoreLocalForm(T,&TlocVec);	// completes the useage of loval vector TlocVec
 	VecDestroy(&TlocVec);					// destroys the TlocVec
 	
-	VecGhostUpdateBegin(*T,INSERT_VALUES,SCATTER_FORWARD);
-	VecGhostUpdateEnd(*T,INSERT_VALUES,SCATTER_FORWARD);
+	VecGhostUpdateBegin(T,INSERT_VALUES,SCATTER_FORWARD);
+	VecGhostUpdateEnd(T,INSERT_VALUES,SCATTER_FORWARD);
 	
 	// Assemble the b vector
-	VecAssemblyBegin(*bvec);
-	VecAssemblyEnd(*bvec);
+	VecAssemblyBegin(bvec);
+	VecAssemblyEnd(bvec);
 	return(0);
 }
 
 // Adds the vector of absorbed heat flux to b vector of knowns
-int bvec_applyflux(Vec *bvec, Vec *qabs)
+int bvec_applyflux(Vec bvec, Vec qabs)
 {
 	// Perform addition of vectors
 	int a = 1;					// multiplier
-	VecAXPY(*bvec, a, *qabs);	// y = y + a*x
+	VecAXPY(bvec, a, qabs);	// y = y + a*x
 	
 	// Assemble the new b vector
-	VecAssemblyBegin(*bvec);
-	VecAssemblyEnd(*bvec);
+	VecAssemblyBegin(bvec);
+	VecAssemblyEnd(bvec);
 	return(0);
 }
 
 // Assemble the global stiffness matrix in parallel
-int Kmat_update(Mat *A,double a, double c)
+int Kmat_update(Mat A, double a, double c)
 {
 
 	//  Define the variables
@@ -131,54 +142,54 @@ int Kmat_update(Mat *A,double a, double c)
 	double val;			// storage value for inserting into PETsc matrix object
 	
 	// Initize necessary variables
-	MatGetSize(*A,&N,&N);			 		// global size of the stiffnexx matrix
+	MatGetSize(A,&N,&N);			 		// global size of the stiffnexx matrix
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);		// the current process
-	MatZeroEntries(*A);						// zero out the stiffness matrix
-	MatGetOwnershipRange(*A, &low, &high);	// global index range of the local matrix
+	MatZeroEntries(A);						// zero out the stiffness matrix
+	MatGetOwnershipRange(A, &low, &high);	// global index range of the local matrix
 
 	// Loop through each row of the local stiffness matrix
 	for(i = low; i < high; ++i) {
 		// Case for the first row: A[0,0] and A[0,1]
 		if(i == 0){
-			MatSetValues(*A,1,&i,1,&i,&c,ADD_VALUES);	// A[0,0]
+			MatSetValues(A,1,&i,1,&i,&c,ADD_VALUES);	// A[0,0]
 			j = 1;
 			val = -a;
-			MatSetValues(*A,1,&i,1,&j,&val,ADD_VALUES); // A[0,1]
+			MatSetValues(A,1,&i,1,&j,&val,ADD_VALUES); // A[0,1]
 		}
 		
 		// Case for the end of the matrix: A[N-1,N-1]
 		else if(i == (N - 1)){
 			val = 1.0;
-			MatSetValues(*A,1,&i,1,&i,&val,ADD_VALUES);
+			MatSetValues(A,1,&i,1,&i,&val,ADD_VALUES);
 	
 		}
 		
 		// General case, diagonal terms
 		else{
-			MatSetValues(*A,1,&i,1,&i,&c,ADD_VALUES);	// A[i,i]
+			MatSetValues(A,1,&i,1,&i,&c,ADD_VALUES);	// A[i,i]
 			j = i - 1;
 			val = -a/2;
-			MatSetValues(*A,1,&i,1,&j,&val,ADD_VALUES);	// A[i,i-1]
+			MatSetValues(A,1,&i,1,&j,&val,ADD_VALUES);	// A[i,i-1]
 			j = i + 1;
-			MatSetValues(*A,1,&i,1,&j,&val,ADD_VALUES); // A[i,i+1]
+			MatSetValues(A,1,&i,1,&j,&val,ADD_VALUES); // A[i,i+1]
 		}
 	}
 	
 	// Assemble the stiffness matrix
-	MatAssemblyBegin(*A,MAT_FINAL_ASSEMBLY);
-	MatAssemblyEnd  (*A,MAT_FINAL_ASSEMBLY);
+	MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);
+	MatAssemblyEnd  (A,MAT_FINAL_ASSEMBLY);
 	return(0);
 }
 
 // Solves for the current temperature vector (x) given K and b: Ax = b 
-int solve_temp(Vec *T, Vec *bvec, Mat *A)
+int solve_temp(Vec T, Vec bvec, Mat A)
 {
 	// Define variables
 	int N;		// N = size of global vector
 	Vec Tnew;	// PETsc vector for storing the computed temperatures (x)
 	
 	// Determine the global vector size
-	VecGetSize(*T,&N);
+	VecGetSize(T,&N);
 	
 	// Create the parallel Tnew vector
 	VecCreateMPI(PETSC_COMM_WORLD,PETSC_DETERMINE,N,&Tnew);
@@ -193,39 +204,38 @@ int solve_temp(Vec *T, Vec *bvec, Mat *A)
 	KSPSetFromOptions(ksp);				
 	
 	// Assigns A matrix to solver
-	KSPSetOperators(ksp,*A,*A,DIFFERENT_NONZERO_PATTERN); 
+	KSPSetOperators(ksp,A,A,DIFFERENT_NONZERO_PATTERN); 
 	
 	// Solves the equation and outputs to Tnew
-	KSPSolve(ksp,*bvec,Tnew); 				
+	KSPSolve(ksp,bvec,Tnew); 				
 	
 	// Assign Tnew = T for the next time step
-	VecCopy(Tnew,*T);
+	VecCopy(Tnew,T);
 	//assembleGhostVec(*T);
-	
 	
 	// Destroy Tnew vector and zero out b vector and stiffness matrix
 	VecDestroy(&Tnew);			// Use "VecDestroy(Tnew);" in PETSc 2.3.3
-	VecZeroEntries(*bvec);
-	MatZeroEntries(*A);
+	VecZeroEntries(bvec);
+	MatZeroEntries(A);
 	return(0);
 }
 
 // Create a temperature vector with ghosted values
-int createWithGhosts(Vec *x, int N)
+int createWithGhosts(Vec x, int N)
 {
 	
 	// Define variables
 	int nlocal; 		// local size of vector
 	int gidx[2]; 		// global indices for ghosts
 	int r; 				// current process number
-	int np; 				// total number of processes 
+	int np; 			// total number of processes 
 		
 	// Determine process and total number of processors
 	MPI_Comm_rank(MPI_COMM_WORLD, &r);	
 	MPI_Comm_size(MPI_COMM_WORLD, &np);
 	
 	// Calculate the desired number of local values per processes
-	nlocal = ceil(double(N)/double(np));
+	nlocal = int(ceil(double(N)/double(np)));
 
 	// Define the global indices for the ghosts
 	// Case for first process
@@ -254,27 +264,27 @@ int createWithGhosts(Vec *x, int N)
 	}	
 	
 	// Create the ghosted vector
-	VecCreateGhost(PETSC_COMM_WORLD,nlocal,PETSC_DECIDE,2,gidx,x); 
+	VecCreateGhost(PETSC_COMM_WORLD,nlocal,PETSC_DECIDE,2,gidx,&x); 
 	return(0);
 };
 
 // Assembles the ghosted vector
-int assembleGhostVec(Vec *x)
+int assembleGhostVec(Vec x)
 {
-	VecView(*x,	PETSC_VIEWER_STDOUT_WORLD);
-	VecGhostView(*x);
-
 	// Assembles the vector
-	VecAssemblyBegin(*x);
-	VecAssemblyEnd(*x);
+	VecAssemblyBegin(x);
+	VecAssemblyEnd(x);
 	
 	// Updates the ghost values
-	VecGhostUpdateBegin(*x,INSERT_VALUES,SCATTER_FORWARD);
-	VecGhostUpdateEnd(*x,INSERT_VALUES,SCATTER_FORWARD);
+	VecGhostUpdateBegin(x,INSERT_VALUES,SCATTER_FORWARD);
+	VecGhostUpdateEnd(x,INSERT_VALUES,SCATTER_FORWARD);
+	
+	//VecView(*x,	PETSC_VIEWER_STDOUT_WORLD);
+	//VecGhostView(*x);
 }
 
 // Appends the temperature vector to a file
-int output_temp(Vec *T, int init, char *filename, int n, double dz, int nt, double dt)
+int output_temp(Vec T, int init, char *filename, int n, double dz, int nt, double dt)
 {
 	// Define variables
 	int r;			// current process
@@ -300,7 +310,7 @@ int output_temp(Vec *T, int init, char *filename, int n, double dz, int nt, doub
 
 		// Write the temperature data
 		for(k=0; k<=n-1; k++){
-			VecGetValues(*T,1,&k,&Tout);
+			VecGetValues(T,1,&k,&Tout);
 			fprintf(fid,"%g\n",Tout);
 		}
 		fclose(fid);
@@ -321,11 +331,20 @@ int VecGhostView(Vec v){
 	VecGetLocalSize(v,&n);						// Size of local vector
 	VecGetOwnershipRange(v, &low, &high);		// Global limits of the local vector
 	
+	// Extract the local vector and store the values in vloc
+	VecGhostGetLocalForm(v,&vlocVec);			// Extracts the local values with ghosts to vlocVec
+	VecGetArray(vlocVec,&vloc);					// Extracts the local vector into an array, vloc
+	
 	// Print the vector
 	printf("Process [%d]\n",r);
 	for (i=0; i<n+2; i++){	
 		PetscSynchronizedPrintf(PETSC_COMM_WORLD," %f\n", vloc[i]);
 	}
+	
+	// Return the local array to the global temperature vector
+	VecRestoreArray(vlocVec,&vloc);			// completes use of local array Tloc
+	VecGhostRestoreLocalForm(v,&vlocVec);	// completes the useage of loval vector TlocVec
+	VecDestroy(&vlocVec);	
 	return(0);
 }
 
