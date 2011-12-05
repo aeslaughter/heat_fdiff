@@ -1,4 +1,4 @@
-heat_fdiff is a 1-D, parallel finite difference solution to the heat equation. The code is documented using Doxygen (www.doxygen.org).
+heat_fdiff is a 1-D, parallel finite difference solution to the heat equation written in C++ with PETSc. The code is documented using Doxygen (www.doxygen.org).
 
 To build the documentation:
 1.) Download Doxygen software, including the Doxywizard.
