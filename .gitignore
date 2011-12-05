@@ -1,4 +1,6 @@
 /doc
-readme.html
 /lib
 /object
+readme.html
+readme.html.lnk
+*.stackdump
